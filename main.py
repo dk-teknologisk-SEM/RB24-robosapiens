@@ -176,18 +176,15 @@ def place_tool(tool_pose):
 
 def contact_with_screen_frame():
     arm.align_to_base()
+    arm.rotate(0.1,0,0)
     result = arm.move_to_contact()
     if not result[0][2]:
         print("PANIC!!!")
         exit()  
     
-    arm.align_to_base()
-    arm.move_to_contact()
     current_pose = arm.get_current_pose()
     current_pose.position.y -= 0.2
-    ori = arm.rotate(0.1,0,0, False)
-    current_pose.orientation = ori
-    arm.move_to_contact(current_pose)
+    arm.move_to_contact(current_pose, only_in_axis=1)
     screen_frame = arm.get_current_pose()  
 
 def remove_screen_frame():

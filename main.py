@@ -1,16 +1,61 @@
-from panda_ros_lib import PandaArm, IterativeParabolicTimeParameterization
+from panda_ros_lib import PandaArm, IterativeParabolicTimeParameterization, rprint
 import numpy as np
 from copy import deepcopy
+from geometry_msgs.msg import Pose, Point, Quaternion
 
 arm = PandaArm()
 
-def move_to_approx_over_pc():
-    pose = arm.get_current_pose()
-    pose.position.x = 0.5261691584349851
-    pose.position.y = -0.2258678959602396
-    pose.position.z= 0.1405689323721724
+pose_dict = {
+    # pc open tool:
+    # position: 
+    #     x: 0.20386157520471365
+    #     y: 0.6645801510473288
+    #     z: 0.004419399625524723
+    # orientation: 
+    #     x: 0.9998922253995857
+    #     y: 0.0011623080370995616
+    #     z: -0.0015716796118986397
+    #     w: -0.014550479328488956
+    "pc_open_tool": Pose(position=Point(x=0.20386157520471365, y=0.6645801510473288, z=0.005919399625524723), orientation=Quaternion(x=0.9998922253995857, y=0.0011623080370995616, z=-0.0015716796118986397, w=-0.014550479328488956)),
+    
+    #screen_frame_remover_tool:
+    #position: 
+    #     x: 0.2623011026342085
+    #     y: 0.6659284230551181
+    #     z: 0.0005035034893641696
+    # orientation: 
+    #     x: 0.9998855068696537
+    #     y: 0.0018523336344112092
+    #     z: -0.0018022485815374601
+    #     w: -0.014909524210141535
+     "screen_frame_remover_tool": Pose(position=Point(x=0.2623011026342085, y=0.6659284230551181, z=0.0010035034893641696), orientation=Quaternion(x=0.9998855068696537, y=0.0018523336344112092, z=-0.0018022485815374601, w=-0.014909524210141535)),
+    #approx_over_pc:
+    # position: 
+    #     x: 0.2222427201621922
+    #     y: 0.1272813651441421
+    #     z: 0.09909940894879733
+    # orientation: 
+    #     x: 0.9998841636265167
+    #     y: 0.003217499767674594
+    #     z: -0.002832508882793489
+    #     w: -0.014604243135989705
+    "approx_over_pc": Pose(position=Point(x=0.2222427201621922, y=0.1272813651441421, z=0.12409940894879733), orientation=Quaternion(x=0.9998841636265167, y=0.003217499767674594, z=-0.002832508882793489, w=-0.014604243135989705)),
 
-    arm.move_to_joint(pose)
+    #approx_over_screen:
+    # position: 
+    #     x: 0.21498598698384658
+    #     y: 0.37981437267763063
+    #     z: 0.04657680654304279
+    # orientation: 
+    #     x: 0.7095270195841653
+    #     y: -0.7046545877221067
+    #     z: -0.003911519093232558
+    #     w: 0.00424505601643487
+
+
+    "approx_over_screen": Pose(position=Point(x=0.21498598698384658, y=0.37981437267763063, z=0.04657680654304279), orientation=Quaternion(x=0.7095270195841653, y=-0.7046545877221067, z=-0.003911519093232558, w=0.00424505601643487))
+}
+
 
 def find_pc_z():
     arm.align_to_base()
@@ -91,19 +136,6 @@ def open_pc(pc_closed_y, pc_closed_z):
     arm.move_to_cartesian(current_pose)
 
 
-def get_pc_open_tool():
-    pose = arm.get_current_pose()
-    pose.position.x = 0.5020610183734253
-    pose.position.y = 0.33300988946444704
-    pose.position.z= 0.0338577209878773
-    return pose
-
-def get_screen_frame_remover_tool():
-    pose = arm.get_current_pose()
-    pose.position.x = 0.5719577898768148
-    pose.position.y = 0.33215015088761674
-    pose.position.z = 0.0308577209878773
-    return pose
 
 def grasp_tool(tool_pose):
     tool_pose_above = deepcopy(tool_pose)
@@ -186,8 +218,10 @@ def main():
 
     while True:
         arm.align_to_base(z=True)
-        grasp_tool(get_pc_open_tool())
-        move_to_approx_over_pc()
+        grasp_tool(pose_dict["pc_open_tool"])
+        arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
+        arm.move_to_cartesian(pose_dict["approx_over_pc"])
+        
         pc_closed_z = find_pc_z()
         # pc_closed_x = find_pc_x() NOT WORKING RIGHT NOW, TOO CLOSE TO JOINT LIMITS
         arm.relative_move(2, 0.02)
@@ -195,19 +229,15 @@ def main():
         pc_closed_y = find_pc_y()
         open_pc(pc_closed_y, pc_closed_z)
 
-        # arm.relative_move(2, 0.2)
-        arm.relative_move(1, -0.05)
-        arm.move_to_neutral()
-        place_tool(get_pc_open_tool())
+        place_tool(tool_pose=pose_dict["pc_open_tool"])
 
-        grasp_tool(get_screen_frame_remover_tool())
-        move_to_approx_over_screen()
+        grasp_tool(pose_dict["screen_frame_remover_tool"])
+        arm.move_group.set_end_effector_link("panda_tool_screen_frame_remover_tcp")
+        arm.move_to_joint(pose_dict["approx_over_screen"])
         contact_with_screen_frame()
         remove_screen_frame()
-        arm.align_to_base(z=True)
-        arm.rotate(0,0,np.pi)
-        place_tool(get_screen_frame_remover_tool())
-
+        place_tool(pose_dict["screen_frame_remover_tool"])
+        
         arm.move_to_neutral()
 
         break

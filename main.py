@@ -161,13 +161,12 @@ def grasp_tool(tool_pose):
     arm.gripper.grasp(0.02, 40)
     arm.relative_move(2, 0.1)
     
-
 def place_tool(tool_pose):
     arm.align_to_base(z=True)
     tool_pose_above = deepcopy(tool_pose)
     tool_pose_above.position.z += 0.1
     arm.move_to_joint(tool_pose_above)
-    
+    arm.move_group.set_end_effector_link("panda_hand_tcp")
 
     arm.move_to_cartesian(tool_pose)
     arm.align_to_base(z=True)

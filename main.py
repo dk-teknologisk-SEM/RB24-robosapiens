@@ -56,6 +56,11 @@ pose_dict = {
     "approx_over_screen": Pose(position=Point(x=0.21498598698384658, y=0.37981437267763063, z=0.04657680654304279), orientation=Quaternion(x=0.7095270195841653, y=-0.7046545877221067, z=-0.003911519093232558, w=0.00424505601643487))
 }
 
+def deg_to_rad(deg):
+    return deg * (np.pi / 180)
+
+def rad_to_deg(rad):
+    return rad * (180 / np.pi)
 
 def find_pc_z():
     arm.align_to_base()

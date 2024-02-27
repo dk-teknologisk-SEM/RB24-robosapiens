@@ -225,7 +225,8 @@ def main():
         pc_closed_z = find_pc_z()
         # pc_closed_x = find_pc_x() NOT WORKING RIGHT NOW, TOO CLOSE TO JOINT LIMITS
         arm.relative_move(2, 0.02)
-        arm.rotate(0,0,np.pi/2)
+        arm.rotate(0,0,-np.pi/2)
+        arm.align_to_base()
         pc_closed_y = find_pc_y()
         open_pc(pc_closed_y, pc_closed_z)
 

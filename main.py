@@ -188,9 +188,22 @@ def contact_with_screen_frame():
     screen_frame = arm.get_current_pose()  
 
 def remove_screen_frame():
+    # REMOVE FROM EDGE OF SCREEN
+    # rprint("START remove_screen_frame")
+    # current_pose = arm.get_current_pose()
+    # current_pose.position.x += 0.3
+    # rprint("FIRST move_to_contact")
+    # arm.move_to_contact(current_pose, only_in_axis=0)
+    # rprint("SECOND move_to_contact")
+    # arm.move_to_contact(current_pose, only_in_axis=0)
+    # arm.clear_error()
+
+    # REMOVE FROM MIDDLE OF SCREEN
     current_pose = arm.get_current_pose()
     current_pose.position.z += 0.02
     arm.move_to_cartesian(current_pose)
+    
+    arm.relative_move(2, 0.02)
     current_pose = arm.get_current_pose()
     current_pose.position.z += 0.2
     current_pose.orientation = arm.rotate(-0.7,0,0, False)

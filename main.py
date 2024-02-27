@@ -113,7 +113,8 @@ def find_pc_y():
 
 def open_pc(pc_closed_y, pc_closed_z):
     arm.relative_move(1,-0.03)
-    arm.rotate(0,0,-np.pi)
+    arm.rotate(0,0, np.pi/2)
+    arm.rotate(0,0, np.pi/2)
 
     pc_lid_thickness = 0.007
     current_pose = arm.get_current_pose()
@@ -128,13 +129,24 @@ def open_pc(pc_closed_y, pc_closed_z):
     current_pose.position.y = 0.05
     arm.move_to_contact(current_pose)
 
-    current_pose = arm.get_current_pose()
-    current_pose.position.z += 0.21
-    current_pose.position.y += 0.06
-    ori = arm.rotate(-0.2,0,0, False)
-    current_pose.orientation = ori
-    arm.move_to_cartesian(current_pose)
+    arm.move_group.set_end_effector_link("panda_pc_open_tcp")
+    arm.rotate(-np.pi/2,0,0)
 
+    arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
+    arm.relative_move(2, 0.1)
+    arm.rotate(np.pi/2,0,0)
+    arm.rotate(np.pi/2,0,0)
+    arm.relative_move(1, -0.02)
+    arm.relative_move(2, -0.11)
+    arm.rotate(0,np.pi/2,0)
+    arm.rotate(0,np.pi/2,0)
+
+    arm.move_group.set_end_effector_link("panda_pc_open_tcp")
+    arm.rotate(-np.pi/2 + 0.2,0,0)
+    arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
+    arm.align_to_base()
+    arm.move_to_contact()
+    arm.relative_move(2, 0.02)
 
 
 def grasp_tool(tool_pose):

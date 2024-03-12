@@ -211,7 +211,24 @@ def place_tool(tool_pose):
     arm.move_to_cartesian(tool_pose)
     arm.gripper.open()
     arm.relative_move(2, 0.1)
-    
+
+def grasp_screw_tool(tool_pose, screw_direction):
+    arm.move_to_neutral()
+    offset_z = -0.2 if screw_direction else -0.175
+    arm.move_group.go(tool_pose, wait=True)
+    arm.gripper.open()
+    arm.relative_move(2, offset_z)
+    arm.gripper.move_joints(0.019)
+    arm.relative_move(2, 0.1)
+
+def place_screw_tool(tool_pose, screw_direction):
+    arm.move_to_neutral()
+    offset_z = -0.2 if screw_direction else -0.175
+    arm.move_group.go(tool_pose, wait=True)
+    arm.move_group.set_end_effector_link("panda_hand_tcp")
+    arm.relative_move(2, offset_z)
+    arm.gripper.open()
+    arm.relative_move(2, 0.1)
 
 def contact_with_screen_frame():
     arm.align_to_base()

@@ -185,7 +185,7 @@ def open_pc(pc_closed_y, pc_closed_z):
     arm.relative_move(2, -0.11)
 
     arm.move_group.set_end_effector_link("panda_pc_open_tcp")
-    arm.rotate(-np.pi/2 + 0.2,0,0)
+    arm.rotate(-np.pi/2 + deg_to_rad(15),0,0)
     arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
     arm.align_to_base()
     arm.move_to_contact()
@@ -196,23 +196,19 @@ def grasp_tool(tool_pose):
     tool_pose_above = deepcopy(tool_pose)
     tool_pose_above.position.z += 0.1
     arm.move_to_joint(tool_pose_above)
-    arm.align_to_base()
     arm.gripper.open()
 
     arm.move_to_cartesian(tool_pose)
-    arm.align_to_base()
     arm.gripper.grasp(0.02, 40)
     arm.relative_move(2, 0.1)
     
 def place_tool(tool_pose):
-    arm.align_to_base(z=True)
     tool_pose_above = deepcopy(tool_pose)
     tool_pose_above.position.z += 0.1
     arm.move_to_joint(tool_pose_above)
     arm.move_group.set_end_effector_link("panda_hand_tcp")
 
     arm.move_to_cartesian(tool_pose)
-    arm.align_to_base(z=True)
     arm.gripper.open()
     arm.relative_move(2, 0.1)
     
@@ -253,14 +249,25 @@ def remove_screen_frame():
     arm.move_to_cartesian(current_pose)
 
 
+def set_force_contact_threshold(force_contact_threshold):
+    arm.stop_controller(arm.controller_name)
+    arm.lower_force = force_contact_threshold
+    arm.upper_force = [x*2 for x in force_contact_threshold]
+    arm.set_force_torque_collision_behavior(arm.lower_torque, arm.upper_torque, arm.lower_force, arm.upper_force)
+    arm.start_controller(arm.controller_name)
+    arm.clear_error()
+
 def main():
 
     arm.clear_error()
     arm.move_to_neutral()
     arm.gripper.close()
+    arm.set_speed(0.25)
 
     while True:
         arm.align_to_base(z=True)
+
+        ### OPEN PC
         grasp_tool(pose_dict["pc_open_tool"])
         arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
         arm.move_to_cartesian(pose_dict["approx_over_pc"])

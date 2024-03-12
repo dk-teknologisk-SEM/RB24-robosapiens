@@ -190,6 +190,36 @@ def open_pc(pc_closed_y, pc_closed_z):
     arm.align_to_base()
     arm.move_to_contact()
     arm.relative_move(2, 0.02)
+    
+    return arm.get_current_pose()
+
+
+def close_pc(pc_open_pose):
+    target_pose = deepcopy(pc_open_pose)
+    target_pose.position.y += 0.06
+    target_pose.position.z -= 0.025
+    arm.move_to_cartesian(target_pose)
+
+    current_pose = arm.get_current_pose()
+    current_pose.position.y -= 0.05
+    arm.move_to_contact(current_pose)
+
+    arm.move_group.set_end_effector_link("panda_pc_open_tcp")
+    arm.rotate(np.pi/2,0,0)
+
+    arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
+    arm.relative_move(2, 0.1)
+    current_pose = arm.get_current_pose()
+    rotation_lst = [arm.rotate(-np.pi/2,0,0, False),arm.rotate(-np.pi,np.pi/2,0, False), arm.rotate(-np.pi,np.pi,0, False)]
+    arm.move_to_cartesian(rotation_lst)
+    arm.relative_move(1, 0.02)
+    arm.relative_move(2, -0.11)
+
+    arm.move_group.set_end_effector_link("panda_pc_open_tcp")
+    arm.rotate(np.pi/2 - deg_to_rad(10),0,0)
+    arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
+    arm.align_to_base()
+    arm.relative_move(2, 0.02)
 
 
 def grasp_tool(tool_pose):
@@ -292,20 +322,45 @@ def main():
         pc_closed_z = find_pc_z()
         # pc_closed_x = find_pc_x() NOT WORKING RIGHT NOW, TOO CLOSE TO JOINT LIMITS
         arm.relative_move(2, 0.02)
-        arm.rotate(0,0,-np.pi/2)
+        # arm.rotate(0,0,-np.pi/2) ## do this earlier when moving to approc over pc
         arm.align_to_base()
         pc_closed_y = find_pc_y()
-        open_pc(pc_closed_y, pc_closed_z)
+        pc_open_pose = open_pc(pc_closed_y, pc_closed_z)
 
         place_tool(tool_pose=pose_dict["pc_open_tool"])
 
+        ### REMOVE SCREEN FRAME
         grasp_tool(pose_dict["screen_frame_remover_tool"])
         arm.move_group.set_end_effector_link("panda_tool_screen_frame_remover_tcp")
         arm.move_to_joint(pose_dict["approx_over_screen"])
         contact_with_screen_frame()
         remove_screen_frame()
         place_tool(pose_dict["screen_frame_remover_tool"])
+
+        # ## UNSCREW SCREWS
+        # grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=0)
+        # arm.move_group.set_end_effector_link("panda_tool_unscrew_tcp")
+
+        arm.move_to_neutral()
+
+        ### CLOSE PC
+        grasp_tool(pose_dict["pc_open_tool"])
+        arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
+        # pc_open_pose
+        # position: 
+        #     x: 0.22591944269050007
+        #     y: 0.47714500752603106
+        #     z: 0.03248090239584106
+        # orientation: 
+        #     x: 0.7107365879481399
+        #     y: -0.7034482544716115
+        #     z: 0.0017953733850007963
+        #     w: -0.0032912713482142367
+        pc_open_pose = Pose(position=Point(x=0.22591944269050007, y=0.47714500752603106, z=0.02648090239584106), orientation=Quaternion(x=0.7107365879481399, y=-0.7034482544716115, z=0.0017953733850007963, w=-0.0032912713482142367))
+        close_pc(pc_open_pose)
+        place_tool(pose_dict["pc_open_tool"])
         
+
         arm.move_to_neutral()
 
         break

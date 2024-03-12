@@ -267,11 +267,14 @@ def contact_with_screen_frame():
     if not result[0][2]:
         print("PANIC!!!")
         exit()  
-    
+
+    # set_force_contact_threshold([10.0, 10.0, 10.0, 13.0, 13.0, 13.0])
     current_pose = arm.get_current_pose()
     current_pose.position.y -= 0.2
     arm.move_to_contact(current_pose, only_in_axis=1)
     screen_frame = arm.get_current_pose()  
+    # set_force_contact_threshold([10.0, 10.0, 10.0, 13.0, 13.0, 13.0])
+
 
 def remove_screen_frame():
     # REMOVE FROM EDGE OF SCREEN

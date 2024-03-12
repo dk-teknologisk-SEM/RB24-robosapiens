@@ -2,6 +2,8 @@ from panda_ros_lib import PandaArm, IterativeParabolicTimeParameterization, rpri
 import numpy as np
 from copy import deepcopy
 from geometry_msgs.msg import Pose, Point, Quaternion
+from time import sleep
+from math import dist
 
 arm = PandaArm()
 
@@ -221,6 +223,64 @@ def close_pc(pc_open_pose):
     arm.align_to_base()
     arm.relative_move(2, 0.02)
 
+def wait_for_move_complete(goal_pose, tolerance=0.005):
+    current_pose = arm.get_current_pose()
+    d = dist([current_pose.position.x, current_pose.position.y, current_pose.position.z], [goal_pose.position.x, goal_pose.position.y, goal_pose.position.z])
+    while  d > tolerance:
+        sleep(1)
+        current_pose = arm.get_current_pose()
+        d = dist([current_pose.position.x, current_pose.position.y, current_pose.position.z], [goal_pose.position.x, goal_pose.position.y, goal_pose.position.z])
+        rprint(d)
+
+def reattach_screen_frame(force_z):
+    rprint("start reattach_screen_frame")
+    arm.move_to_contact()
+    arm.relative_move(2, 0.004)
+    arm.align_to_base()
+
+    
+    arm.start_cartestion_impedance_controller()
+    rprint("set_cartestion_impedance_wrench")
+    arm.set_cartestion_impedance_wrench([0,0,force_z], [0,0,0])  
+    sleep(1)
+
+    # rprint("first move")
+    # goal_pose = arm.relative_move(1, 0.25)
+    # wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
+
+    # rprint("second move")
+    # goal_pose = arm.relative_move(0, -0.37)
+    # wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
+
+    # rprint("third move")
+    # goal_pose = arm.relative_move(1, -0.24)
+    # wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
+
+    # rprint("fourth move")
+    # goal_pose = arm.relative_move(0, 0.37)
+    # wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
+
+    rprint("first move")
+    goal_pose = arm.relative_move(0, -0.36)
+    wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
+
+    rprint("second move")
+    goal_pose = arm.relative_move(1, 0.25)
+    wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
+
+    rprint("third move")
+    goal_pose = arm.relative_move(0, 0.36)
+    wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
+
+    rprint("fourth move")
+    goal_pose = arm.relative_move(1, -0.22)
+    wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
+
+    rprint("stop_cartestion_impedance_controller")
+    arm.set_cartestion_impedance_wrench([0,0,0], [0,0,0])
+    arm.stop_cartestion_impedance_controller()
+
+    arm.relative_move(2, 0.02)
 
 def grasp_tool(tool_pose):
     tool_pose_above = deepcopy(tool_pose)
@@ -345,6 +405,13 @@ def main():
         # arm.move_group.set_end_effector_link("panda_tool_unscrew_tcp")
 
         arm.move_to_neutral()
+
+        ### REATTACH SCREEN FRAME
+        grasp_tool(pose_dict["reattach_screen_frame_tool"])
+        arm.move_group.set_end_effector_link("panda_tool_reattach_screen_frame_tcp")
+        arm.move_to_joint(pose_dict["above_screen_frame_reattach_startpoint"])
+        reattach_screen_frame(force_z=8)
+        place_tool(pose_dict["reattach_screen_frame_tool"])
 
         ### CLOSE PC
         grasp_tool(pose_dict["pc_open_tool"])

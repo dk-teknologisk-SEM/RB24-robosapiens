@@ -154,8 +154,9 @@ def find_pc_y():
 
 def open_pc(pc_closed_y, pc_closed_z):
     arm.relative_move(1,-0.03)
-    arm.rotate(0,0, np.pi/2)
-    arm.rotate(0,0, np.pi/2)
+
+    move_list = [arm.rotate(0,0, np.pi/2, False), arm.rotate(0,0, np.pi, False)]
+    arm.move_to_cartesian(move_list)
 
     pc_lid_thickness = 0.007
     current_pose = arm.get_current_pose()
@@ -175,12 +176,13 @@ def open_pc(pc_closed_y, pc_closed_z):
 
     arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
     arm.relative_move(2, 0.1)
-    arm.rotate(np.pi/2,0,0)
-    arm.rotate(np.pi/2,0,0)
+
+    current_pose = arm.get_current_pose()
+    rotation_lst = [arm.rotate(np.pi/2,0,0, False),arm.rotate(np.pi,np.pi/2,0, False), arm.rotate(np.pi,np.pi,0, False)]
+    arm.move_to_cartesian(rotation_lst)
+
     arm.relative_move(1, -0.02)
     arm.relative_move(2, -0.11)
-    arm.rotate(0,np.pi/2,0)
-    arm.rotate(0,np.pi/2,0)
 
     arm.move_group.set_end_effector_link("panda_pc_open_tcp")
     arm.rotate(-np.pi/2 + 0.2,0,0)
@@ -247,7 +249,7 @@ def remove_screen_frame():
     arm.relative_move(2, 0.02)
     current_pose = arm.get_current_pose()
     current_pose.position.z += 0.2
-    current_pose.orientation = arm.rotate(-0.7,0,0, False)
+    current_pose.orientation = arm.rotate(-0.7,0,0, False).orientation
     arm.move_to_cartesian(current_pose)
 
 

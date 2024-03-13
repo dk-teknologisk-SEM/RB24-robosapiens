@@ -360,9 +360,12 @@ def remove_screen_frame():
 
 
 def set_force_contact_threshold(force_contact_threshold):
+    if len(force_contact_threshold) != 6:
+        print("force_contact_threshold must be a list of 6 elements")
+        return
     arm.stop_controller(arm.controller_name)
     arm.lower_force = force_contact_threshold
-    arm.upper_force = [x*2 for x in force_contact_threshold]
+    arm.upper_force = [max(x*2,18) for x in force_contact_threshold]
     arm.set_force_torque_collision_behavior(arm.lower_torque, arm.upper_torque, arm.lower_force, arm.upper_force)
     arm.start_controller(arm.controller_name)
     arm.clear_error()

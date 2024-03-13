@@ -564,11 +564,33 @@ def main():
         remove_screen_frame()
         place_tool(pose_dict["screen_frame_remover_tool"])
 
-        # ## UNSCREW SCREWS
-        # grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=0)
-        # arm.move_group.set_end_effector_link("panda_tool_unscrew_tcp")
-
         arm.move_to_neutral()
+
+        # TEMPORARY BREAK for manual tool change
+        arm.gripper.open()
+        input("Press Enter to continue...")
+        arm.gripper.move_joints(0.019)
+        
+        ## UNSCREW SCREWS
+        # grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=0)
+        arm.move_group.set_end_effector_link("panda_tool_unscrew_tcp")
+        arm.move_to_neutral()
+        unscrew_screws_from_pc()
+
+        # TEMPORARY BREAK for manual tool change
+        arm.gripper.open()
+        input("Press Enter to continue...")
+        arm.gripper.move_joints(0.019)
+
+        ## RESCREW SCREWS
+        # grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=1)
+        arm.move_group.set_end_effector_link("panda_tool_screw_tcp")
+        arm.move_to_neutral()
+        rescrew_screws_to_pc()
+
+        arm.gripper.open()
+        input("Press Enter to continue...")
+        arm.move_group.set_end_effector_link("panda_hand_tcp")
 
         ### REATTACH SCREEN FRAME
         grasp_tool(pose_dict["reattach_screen_frame_tool"])

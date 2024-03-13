@@ -239,7 +239,7 @@ def reattach_screen_frame(force_z):
     arm.align_to_base()
 
     
-    arm.start_cartestion_impedance_controller()
+    arm.start_cartestion_impedance_controller([1000,1000,1000,10,10,10], [1.0,1.0,1.0,1.0,1.0,1.0])
     rprint("set_cartestion_impedance_wrench")
     arm.set_cartestion_impedance_wrench([0,0,force_z], [0,0,0])  
     sleep(1)

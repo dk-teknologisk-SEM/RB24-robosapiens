@@ -437,6 +437,52 @@ def set_force_contact_threshold(force_contact_threshold):
     arm.start_controller(arm.controller_name)
     arm.clear_error()
 
+def unscrew_screw(just_above_screw_pose, unscrew_time=2):
+    arm.move_group.go(just_above_screw_pose, wait=True)
+    arm.move_group.stop()
+
+    arm.gripper.grasp(0.016, 20)
+    arm.move_to_contact(speed=0.005)
+    
+    sleep(unscrew_time)
+    arm.relative_move(2, 0.02)
+    arm.gripper.move_joints(0.019)
+
+    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
+    arm.move_group.stop()
+
+def dropoff_screw_at_tool_holder(screw_hole_pose):
+    arm.move_to_cartesian(screw_hole_pose)
+    arm.move_to_contact(speed=0.005)
+    arm.rotate(deg_to_rad(-10),0,0)
+    current_pose = arm.get_current_pose()
+    # current_pose.position.x += 0.01
+    current_pose.position.y += 0.01
+    current_pose.position.z += 0.01
+    arm.move_to_cartesian(current_pose)
+    # arm.relative_move(2, 0.02)
+
+    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
+    arm.move_group.stop()
+
+def unscrew_screws_from_pc():
+    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
+    arm.move_group.stop()
+
+    old_threshold = arm.lower_force
+    set_force_contact_threshold([5,5,5,10,10,10])
+
+    unscrew_screw(pose_dict["just_above_screw1"], unscrew_time=2.5)
+    dropoff_screw_at_tool_holder(pose_dict["screw_hole1"])
+    unscrew_screw(pose_dict["just_above_screw2"])
+    dropoff_screw_at_tool_holder(pose_dict["screw_hole2"])
+    unscrew_screw(pose_dict["just_above_screw3"])
+    dropoff_screw_at_tool_holder(pose_dict["screw_hole3"])
+    unscrew_screw(pose_dict["just_above_screw4"])
+    dropoff_screw_at_tool_holder(pose_dict["screw_hole4"])
+
+    arm.move_to_neutral()
+    set_force_contact_threshold(old_threshold)
 def main():
 
     arm.clear_error()

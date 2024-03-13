@@ -465,6 +465,16 @@ def dropoff_screw_at_tool_holder(screw_hole_pose):
     arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
     arm.move_group.stop()
 
+def pick_up_screw_from_tool_holder(screw_hole_pose):
+    arm.move_to_cartesian(screw_hole_pose)
+    arm.move_to_contact(speed=0.005)
+
+    arm.relative_move(2, 0.02)
+
+
+    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
+    arm.move_group.stop()
+
 def unscrew_screws_from_pc():
     arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
     arm.move_group.stop()
@@ -483,6 +493,44 @@ def unscrew_screws_from_pc():
 
     arm.move_to_neutral()
     set_force_contact_threshold(old_threshold)
+
+def rescrew_screw(just_above_screw_pose, screw_time=2):
+    arm.move_group.go(just_above_screw_pose, wait=True)
+    arm.move_group.stop()
+
+    arm.gripper.grasp(0.016, 20)
+    arm.move_to_contact(speed=0.005)
+    
+    sleep(screw_time)
+    arm.relative_move(2, 0.02)
+    arm.gripper.move_joints(0.019)
+
+    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
+    arm.move_group.stop()
+
+def rescrew_screws_to_pc():
+    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
+    arm.move_group.stop()
+
+    old_threshold = arm.lower_force
+    set_force_contact_threshold([5,5,5,10,10,10])
+
+    pick_up_screw_from_tool_holder(pose_dict["screw_hole4"])
+    input("Press Enter to continue...")
+    rescrew_screw(pose_dict["just_above_screw4"])
+    pick_up_screw_from_tool_holder(pose_dict["screw_hole3"])
+    input("Press Enter to continue...")
+    rescrew_screw(pose_dict["just_above_screw3"])
+    pick_up_screw_from_tool_holder(pose_dict["screw_hole2"])
+    input("Press Enter to continue...")
+    rescrew_screw(pose_dict["just_above_screw2"])
+    pick_up_screw_from_tool_holder(pose_dict["screw_hole1"])
+    input("Press Enter to continue...")
+    rescrew_screw(pose_dict["just_above_screw1"])
+
+    arm.move_to_neutral()
+    set_force_contact_threshold(old_threshold)
+
 def main():
 
     arm.clear_error()

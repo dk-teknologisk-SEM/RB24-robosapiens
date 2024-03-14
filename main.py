@@ -300,12 +300,10 @@ def wait_for_move_complete(goal_pose, tolerance=0.005):
 
 def reattach_screen_frame(force_z):
     rprint("start reattach_screen_frame")
-    arm.move_to_contact()
-    arm.relative_move(2, 0.004)
-    arm.align_to_base()
-
-    
     arm.start_cartestion_impedance_controller([1000,1000,1000,10,10,10], [1.0,1.0,1.0,1.0,1.0,1.0])
+
+    arm.move_to_contact(speed=0.005)
+    
     rprint("set_cartestion_impedance_wrench")
     arm.set_cartestion_impedance_wrench([0,0,force_z], [0,0,0])  
     sleep(1)

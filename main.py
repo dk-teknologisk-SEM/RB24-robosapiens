@@ -481,7 +481,7 @@ def unscrew_screws_from_pc():
     old_threshold = arm.lower_force
     set_force_contact_threshold([5,5,5,10,10,10])
 
-    unscrew_screw(pose_dict["just_above_screw1"], unscrew_time=2.5)
+    unscrew_screw(pose_dict["just_above_screw1"])
     dropoff_screw_at_tool_holder(pose_dict["screw_hole1"])
     unscrew_screw(pose_dict["just_above_screw2"])
     dropoff_screw_at_tool_holder(pose_dict["screw_hole2"])
@@ -522,10 +522,10 @@ def rescrew_screws_to_pc():
     rescrew_screw(pose_dict["just_above_screw3"])
     pick_up_screw_from_tool_holder(pose_dict["screw_hole2"])
     input("Press Enter to continue...")
-    rescrew_screw(pose_dict["just_above_screw2"])
+    rescrew_screw(pose_dict["just_above_screw2"], screw_time=1.75)
     pick_up_screw_from_tool_holder(pose_dict["screw_hole1"])
     input("Press Enter to continue...")
-    rescrew_screw(pose_dict["just_above_screw1"])
+    rescrew_screw(pose_dict["just_above_screw1"], screw_time=1.75)
 
     arm.move_to_neutral()
     set_force_contact_threshold(old_threshold)

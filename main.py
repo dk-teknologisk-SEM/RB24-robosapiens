@@ -497,6 +497,8 @@ def rescrew_screw(just_above_screw_pose, screw_time=2):
     arm.move_group.go(just_above_screw_pose, wait=True)
     arm.move_group.stop()
 
+    arm.relative_move(2, -0.015)
+
     arm.gripper.grasp(0.016, 20)
     arm.move_to_contact(speed=0.005)
     

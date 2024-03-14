@@ -296,7 +296,6 @@ def wait_for_move_complete(goal_pose, tolerance=0.005):
         sleep(1)
         current_pose = arm.get_current_pose()
         d = dist([current_pose.position.x, current_pose.position.y, current_pose.position.z], [goal_pose.position.x, goal_pose.position.y, goal_pose.position.z])
-        rprint(d)
 
 def reattach_screen_frame(force_z):
     rprint("start reattach_screen_frame")
@@ -431,6 +430,8 @@ def set_force_contact_threshold(force_contact_threshold):
     arm.lower_force = force_contact_threshold
     arm.upper_force = [max(x*2,18) for x in force_contact_threshold]
     arm.set_force_torque_collision_behavior(arm.lower_torque, arm.upper_torque, arm.lower_force, arm.upper_force)
+    rprint(arm.lower_force)
+    rprint(arm.upper_force)
     arm.start_controller(arm.controller_name)
     arm.clear_error()
 

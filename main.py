@@ -629,6 +629,67 @@ def rescrew_screws_to_pc():
     arm.move_to_neutral()
     set_force_contact_threshold(old_threshold)
 
+def contact_with_screen_frame():
+    arm.align_to_base()
+    arm.rotate(0.1,0,0)
+    result = arm.move_to_contact()
+    if not result[0][2]:
+        print("PANIC!!!")
+        exit()  
+
+    old_threshold = arm.lower_force
+    set_force_contact_threshold([15.0, 15.0, 15.0, 18.0, 18.0, 18.0])
+    current_pose = arm.get_current_pose()
+    current_pose.position.y -= 0.1
+    current_pose.position.z -= 0.002
+    arm.move_to_contact(current_pose, only_in_axis=0)
+    screen_frame = arm.get_current_pose()  
+    set_force_contact_threshold(old_threshold)
+
+def remove_screen_frame():
+    current_pose = arm.get_current_pose()
+    current_pose.position.z += 0.02
+    arm.move_to_cartesian(current_pose)
+    
+    arm.relative_move(2, 0.02)
+    arm.clear_error()
+    current_pose = arm.get_current_pose()
+    current_pose.position.z += 0.2
+    current_pose.orientation = arm.rotate(-0.7,0,0, False).orientation
+    arm.move_to_cartesian(current_pose)
+
+def place_screen_frame_in_holder():
+    arm.relative_move(2, 0.3)
+    arm.rotate(np.pi/2,0,0)
+    arm.move_to_joint(pose_dict["screen_frame_holder_pose"])
+
+    pose = arm.get_current_pose()
+    pose.position.y += 0.1
+    arm.move_to_contact(pose)
+    arm.relative_move(2, -0.06)
+    arm.relative_move(1, -0.1)
+
+def pickup_screen_frame_from_holder():
+    arm.move_to_joint(pose_dict["screen_frame_holder_pose"])
+    arm.move_to_cartesian(pose_dict["pickup_screen_frame_from_holder"])
+    arm.gripper.grasp(0.035, 40)
+    arm.relative_move(2,0.02)
+    arm.relative_move(1,-0.2)
+
+def replace_screen_frame():
+    arm.rotate(-np.pi/2,0,0)
+    arm.relative_move(1,-0.15)
+    rotation_list = [arm.rotate(0,0,np.pi/2, False),arm.rotate(0,0,np.pi/2, False)]
+    arm.move_to_cartesian(rotation_list)
+    
+    arm.move_to_cartesian(pose_dict["setpoint_replace_screen_frame"])
+    arm.relative_move(2,-0.015)
+    goal_pose = pose_dict["replace_screen_frame_pose"]
+    goal_pose.position.y += 0.002
+    arm.move_to_cartesian(goal_pose)
+    arm.gripper.open()
+    arm.relative_move(2,0.1)
+
 def main():
 
     arm.clear_error()
@@ -654,12 +715,12 @@ def main():
         ### REMOVE SCREEN FRAME
         grasp_tool(pose_dict["screen_frame_remover_tool"])
         arm.move_group.set_end_effector_link("panda_tool_screen_frame_remover_tcp")
-        arm.move_to_joint(pose_dict["approx_over_screen"])
+        arm.move_to_cartesian(pose_dict["approx_over_screen"])
         contact_with_screen_frame()
         remove_screen_frame()
-        place_tool(pose_dict["screen_frame_remover_tool"])
-
+        place_screen_frame_in_holder()
         arm.move_to_neutral()
+        place_tool(pose_dict["screen_frame_remover_tool"])
 
         ### UNSCREW SCREWS
         grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=0)
@@ -686,9 +747,10 @@ def main():
         rescrew_screws_to_pc()
         place_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=1)
 
-        arm.gripper.open()
-        input("Press Enter to continue...")
-        arm.move_group.set_end_effector_link("panda_hand_tcp")
+        ### REPLACE SCREEN FRAME
+        pickup_screen_frame_from_holder()
+        replace_screen_frame()
+        arm.move_to_neutral()
 
         ### REATTACH SCREEN FRAME
         grasp_tool(pose_dict["pc_open_tool"])

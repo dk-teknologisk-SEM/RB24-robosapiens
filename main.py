@@ -415,6 +415,85 @@ def reattach_screen_frame(force_z):
     arm.stop_cartestion_impedance_controller()
     arm.relative_move(2, 0.02)
 
+def remove_screen():
+    current_pose = arm.get_current_pose()
+    current_pose.position.z += 0.35
+    current_pose.position.y -= 0.3
+    current_pose.position.x += 0.2
+    arm.move_to_cartesian(current_pose)
+    arm.move_to_joint(pose_dict["screen_remover_init_pose"])
+    arm.move_to_cartesian(pose_dict["approx_over_screen"])
+    arm.rotate(0.02,0,0)
+    old_threshold = arm.lower_force
+    set_force_contact_threshold([20,20,20,23,23,23])
+    arm.move_to_contact()
+    arm.relative_move(2, 0.05)
+    current_joint_pose = list(arm.state.q)
+    current_joint_pose[6] -= np.pi
+    arm.move_to_joint(current_joint_pose)
+    current_pose = arm.get_current_pose()
+    current_pose.position.x -= 0.41
+    current_pose.position.y -= 0.33
+    arm.move_to_cartesian(current_pose)
+    
+    set_force_contact_threshold(old_threshold)
+    arm.relative_move(2, -0.05)
+    arm.move_to_contact()
+    current_pose = arm.get_current_pose()
+    current_pose.position.y -= 0.03
+    arm.move_to_contact(current_pose, only_in_axis=0)
+    arm.clear_error()
+    current_pose = arm.get_current_pose()
+    current_pose.position.x += 0.02
+    current_pose.position.y -= 0.0025
+    arm.move_to_contact(current_pose, only_in_axis=1)
+    dropoff_screen_pose = arm.get_current_pose()
+    set_force_contact_threshold(force_contact_threshold=old_threshold)
+    arm.clear_error()
+    
+    arm.move_group.set_end_effector_link("panda_tool_screen_remover_tcp_off")
+    arm.rotate(deg_to_rad(-10),0,0)
+    arm.relative_move(2, 0.05)
+    arm.move_group.set_end_effector_link("panda_tool_screen_remover_tcp")
+
+    return dropoff_screen_pose
+
+def pickup_screen_from_holder(dropoff_screen_pose):
+    dropoff_screen_pose_above = deepcopy(dropoff_screen_pose)
+    dropoff_screen_pose_above.position.z += 0.05
+    arm.move_to_cartesian(dropoff_screen_pose_above)
+
+    old_threshold = arm.lower_force
+    set_force_contact_threshold([35,35,35,38,38,38])
+    arm.rotate(-0.02, 0, 0)
+    arm.rotate(0,0.02, 0)
+    arm.move_to_contact()
+
+    current_pose = arm.get_current_pose()
+    current_pose.position.x -= 0.01
+    current_pose.position.y += 0.04
+    arm.move_to_cartesian(current_pose)
+    arm.relative_move(2, 0.1)
+    set_force_contact_threshold(old_threshold)
+
+def replace_screen():
+    current_joint_pose = list(arm.state.q)
+    current_joint_pose[6] += np.pi
+    arm.move_to_joint(current_joint_pose)
+    arm.move_to_cartesian(pose_dict["approx_over_screen"])
+    arm.relative_move(0,-0.0015)
+    arm.move_to_contact()
+    rprint(arm.robot_mode)
+    arm.clear_error()
+
+    old_threshold = arm.lower_force
+    set_force_contact_threshold([15,15,15,18,18,18])
+    arm.move_group.set_end_effector_link("panda_tool_screen_remover_tcp_off")
+    arm.rotate(deg_to_rad(10),0,0)
+    arm.relative_move(2, 0.1)
+    arm.move_group.set_end_effector_link("panda_tool_screen_remover_tcp")
+    set_force_contact_threshold(old_threshold)
+
 def grasp_tool(tool_pose):
     tool_pose_above = deepcopy(tool_pose)
     tool_pose_above.position.z += 0.1
@@ -646,13 +725,19 @@ def main():
         arm.move_to_neutral()
         unscrew_screws_from_pc()
 
-        # TEMPORARY BREAK for manual tool change
-        arm.gripper.open()
-        input("Press Enter to continue...")
-        arm.gripper.move_joints(0.019)
+        ### REMOVE SCREEN
+        grasp_tool(pose_dict["screen_remover_tool"])
+        arm.move_group.set_end_effector_link("panda_tool_screen_remover_tcp")
+        dropoff_screen_pose = remove_screen()
 
-        ## RESCREW SCREWS
-        # grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=1)
+        ### REATTACH SCREEN 
+        pickup_screen_from_holder(dropoff_screen_pose)
+        replace_screen()
+        arm.move_to_neutral()
+        place_tool(pose_dict["screen_remover_tool"])
+
+        ### RESCREW SCREWS
+        grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=1)
         arm.move_group.set_end_effector_link("panda_tool_screw_tcp")
         arm.move_to_neutral()
         rescrew_screws_to_pc()

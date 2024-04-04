@@ -4,6 +4,7 @@ from copy import deepcopy
 from geometry_msgs.msg import Pose, Point, Quaternion
 from time import sleep
 from math import dist
+import rospy
 
 arm = PandaArm()
 
@@ -771,7 +772,13 @@ def main():
 
 
 if __name__ == "__main__":
+
+
     try:
         main()
+    except rospy.ROSInterruptException:
+        rprint("ROSInterruptException")
+        arm.move_group.stop()
     except KeyboardInterrupt:
+        rprint("KeyboardInterrupt")
         arm.move_group.stop()

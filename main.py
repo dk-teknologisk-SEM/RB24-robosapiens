@@ -526,50 +526,15 @@ def grasp_screw_tool(tool_pose, screw_direction):
 def place_screw_tool(tool_pose, screw_direction):
     arm.move_to_neutral()
     offset_z = -0.2 if screw_direction else -0.175
-    arm.move_group.go(tool_pose, wait=True)
+    arm.move_to_joint(pose_feature=tool_pose)
+    arm.gripper.grasp(0.016, 20)
+    arm.gripper.move_joints(0.019)
     arm.move_group.set_end_effector_link("panda_hand_tcp")
     arm.relative_move(2, offset_z)
     arm.gripper.open()
-    arm.relative_move(2, 0.1)
-
-def contact_with_screen_frame():
-    arm.align_to_base()
-    arm.rotate(0.1,0,0)
-    result = arm.move_to_contact()
-    if not result[0][2]:
-        print("PANIC!!!")
-        exit()  
-
-    # set_force_contact_threshold([10.0, 10.0, 10.0, 13.0, 13.0, 13.0])
-    current_pose = arm.get_current_pose()
-    current_pose.position.y -= 0.2
-    arm.move_to_contact(current_pose, only_in_axis=1)
-    screen_frame = arm.get_current_pose()  
-    # set_force_contact_threshold([10.0, 10.0, 10.0, 13.0, 13.0, 13.0])
-
-
-def remove_screen_frame():
-    # REMOVE FROM EDGE OF SCREEN
-    # rprint("START remove_screen_frame")
-    # current_pose = arm.get_current_pose()
-    # current_pose.position.x += 0.3
-    # rprint("FIRST move_to_contact")
-    # arm.move_to_contact(current_pose, only_in_axis=0)
-    # rprint("SECOND move_to_contact")
-    # arm.move_to_contact(current_pose, only_in_axis=0)
-    # arm.clear_error()
-
-    # REMOVE FROM MIDDLE OF SCREEN
-    current_pose = arm.get_current_pose()
-    current_pose.position.z += 0.02
-    arm.move_to_cartesian(current_pose)
-    
-    arm.relative_move(2, 0.02)
-    current_pose = arm.get_current_pose()
-    current_pose.position.z += 0.2
-    current_pose.orientation = arm.rotate(-0.7,0,0, False).orientation
-    arm.move_to_cartesian(current_pose)
-
+    arm.clear_error()
+    arm.relative_move(2, 0.15)
+    arm.move_to_neutral()
 
 def set_force_contact_threshold(force_contact_threshold):
     if len(force_contact_threshold) != 6:
@@ -695,16 +660,12 @@ def main():
 
         arm.move_to_neutral()
 
-        # TEMPORARY BREAK for manual tool change
-        arm.gripper.open()
-        input("Press Enter to continue...")
-        arm.gripper.move_joints(0.019)
-        
-        ## UNSCREW SCREWS
-        # grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=0)
+        ### UNSCREW SCREWS
+        grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=0)
         arm.move_group.set_end_effector_link("panda_tool_unscrew_tcp")
         arm.move_to_neutral()
         unscrew_screws_from_pc()
+        place_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=0)
 
         ### REMOVE SCREEN
         grasp_tool(pose_dict["screen_remover_tool"])
@@ -722,6 +683,7 @@ def main():
         arm.move_group.set_end_effector_link("panda_tool_screw_tcp")
         arm.move_to_neutral()
         rescrew_screws_to_pc()
+        place_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=1)
 
         arm.gripper.open()
         input("Press Enter to continue...")

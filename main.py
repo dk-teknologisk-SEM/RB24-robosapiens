@@ -387,26 +387,32 @@ def reattach_screen_frame(force_z):
     # goal_pose = arm.relative_move(0, 0.37)
     # wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
 
+def reattach_screen_frame(force_z):
+    rprint("start reattach_screen_frame")
+    arm.start_cartestion_impedance_controller([1000,1000,1000,10,10,10], [1.0,1.0,1.0,1.0,1.0,1.0])
+    arm.move_to_contact(speed=0.005)
+    rprint("set_cartestion_impedance_wrench")
+    arm.set_cartestion_impedance_wrench([0,0,force_z], [0,0,0])  
+    sleep(1)
     rprint("first move")
-    goal_pose = arm.relative_move(0, -0.36)
+    goal_pose = arm.relative_move(0, -0.355)
     wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
-
+    rprint("move done")
     rprint("second move")
     goal_pose = arm.relative_move(1, 0.25)
-    wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
-
+    wait_for_move_complete(goal_pose=goal_pose, tolerance=0.024)
     rprint("third move")
-    goal_pose = arm.relative_move(0, 0.36)
-    wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
-
+    goal_pose = arm.get_current_pose()
+    goal_pose.position.x += 0.36
+    goal_pose.position.y -= 0.007
+    arm.move_to_cartesian(goal_pose)
+    wait_for_move_complete(goal_pose=goal_pose, tolerance=0.015)
     rprint("fourth move")
     goal_pose = arm.relative_move(1, -0.22)
     wait_for_move_complete(goal_pose=goal_pose, tolerance=0.01)
-
     rprint("stop_cartestion_impedance_controller")
     arm.set_cartestion_impedance_wrench([0,0,0], [0,0,0])
     arm.stop_cartestion_impedance_controller()
-
     arm.relative_move(2, 0.02)
 
 def grasp_tool(tool_pose):
@@ -656,11 +662,12 @@ def main():
         arm.move_group.set_end_effector_link("panda_hand_tcp")
 
         ### REATTACH SCREEN FRAME
-        grasp_tool(pose_dict["reattach_screen_frame_tool"])
-        arm.move_group.set_end_effector_link("panda_tool_reattach_screen_frame_tcp")
+        grasp_tool(pose_dict["pc_open_tool"])
+        arm.move_group.set_end_effector_link("panda_tool_pc_open_tcp")
         arm.move_to_joint(pose_dict["above_screen_frame_reattach_startpoint"])
         reattach_screen_frame(force_z=8)
-        place_tool(pose_dict["reattach_screen_frame_tool"])
+        arm.move_to_neutral()
+        place_tool(pose_dict["pc_open_tool"])
 
         ### CLOSE PC
         grasp_tool(pose_dict["pc_open_tool"])

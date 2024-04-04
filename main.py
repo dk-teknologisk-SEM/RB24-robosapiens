@@ -553,29 +553,30 @@ def unscrew_screw(just_above_screw_pose, unscrew_time=2):
     arm.move_to_joint(just_above_screw_pose)
     arm.gripper.grasp(0.016, 20)
     arm.move_to_contact(speed=0.005)
-    
+    rprint("move_to_contact done")
     sleep(unscrew_time)
+    rprint("sleep done")
     arm.relative_move(2, 0.02)
+    rprint("relative_move done")
     arm.gripper.move_joints(0.019)
     arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
 
 def dropoff_screw_at_tool_holder(screw_hole_pose):
     arm.move_to_cartesian(screw_hole_pose)
+    arm.gripper.grasp(0.016, 20)
     arm.move_to_contact(speed=0.005)
+    arm.gripper.move_joints(0.019)
     arm.rotate(deg_to_rad(-10),0,0)
     current_pose = arm.get_current_pose()
-    # current_pose.position.x += 0.01
     current_pose.position.y += 0.01
     current_pose.position.z += 0.01
     arm.move_to_cartesian(current_pose)
     arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
 
 def pick_up_screw_from_tool_holder(screw_hole_pose: Pose):
-    screw_hole_pose.position.x += 0.002
     arm.move_to_cartesian(screw_hole_pose)
     arm.gripper.grasp(0.016, 20)
     arm.move_to_contact(speed=0.005)
-
     arm.relative_move(2, 0.02)
     arm.gripper.move_joints(0.019)
     arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])

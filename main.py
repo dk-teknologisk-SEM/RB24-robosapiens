@@ -517,7 +517,7 @@ def place_tool(tool_pose):
 def grasp_screw_tool(tool_pose, screw_direction):
     arm.move_to_neutral()
     offset_z = -0.2 if screw_direction else -0.175
-    arm.move_group.go(tool_pose, wait=True)
+    arm.move_to_joint(tool_pose)
     arm.gripper.open()
     arm.relative_move(2, offset_z)
     arm.gripper.move_joints(0.019)
@@ -585,18 +585,14 @@ def set_force_contact_threshold(force_contact_threshold):
     arm.clear_error()
 
 def unscrew_screw(just_above_screw_pose, unscrew_time=2):
-    arm.move_group.go(just_above_screw_pose, wait=True)
-    arm.move_group.stop()
-
+    arm.move_to_joint(just_above_screw_pose)
     arm.gripper.grasp(0.016, 20)
     arm.move_to_contact(speed=0.005)
     
     sleep(unscrew_time)
     arm.relative_move(2, 0.02)
     arm.gripper.move_joints(0.019)
-
-    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
-    arm.move_group.stop()
+    arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
 
 def dropoff_screw_at_tool_holder(screw_hole_pose):
     arm.move_to_cartesian(screw_hole_pose)
@@ -607,10 +603,7 @@ def dropoff_screw_at_tool_holder(screw_hole_pose):
     current_pose.position.y += 0.01
     current_pose.position.z += 0.01
     arm.move_to_cartesian(current_pose)
-    # arm.relative_move(2, 0.02)
-
-    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
-    arm.move_group.stop()
+    arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
 
 def pick_up_screw_from_tool_holder(screw_hole_pose: Pose):
     screw_hole_pose.position.x += 0.002
@@ -620,14 +613,10 @@ def pick_up_screw_from_tool_holder(screw_hole_pose: Pose):
 
     arm.relative_move(2, 0.02)
     arm.gripper.move_joints(0.019)
-
-    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
-    arm.move_group.stop()
+    arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
 
 def unscrew_screws_from_pc():
-    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
-    arm.move_group.stop()
-
+    arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
     old_threshold = arm.lower_force
     set_force_contact_threshold([5,5,5,10,10,10])
 
@@ -644,25 +633,17 @@ def unscrew_screws_from_pc():
     set_force_contact_threshold(old_threshold)
 
 def rescrew_screw(just_above_screw_pose, screw_time=2):
-    arm.move_group.go(just_above_screw_pose, wait=True)
-    arm.move_group.stop()
-
+    arm.move_to_joint(just_above_screw_pose)
     arm.relative_move(2, -0.015)
-
     arm.gripper.grasp(0.016, 20)
     arm.move_to_contact(speed=0.005)
-    
     sleep(screw_time)
     arm.relative_move(2, 0.02)
     arm.gripper.move_joints(0.019)
-
-    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
-    arm.move_group.stop()
+    arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
 
 def rescrew_screws_to_pc():
-    arm.move_group.go(pose_dict["approx_above_screen_with_screw_tool"], wait=True)
-    arm.move_group.stop()
-
+    arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
     old_threshold = arm.lower_force
     set_force_contact_threshold([5,5,5,10,10,10])
 

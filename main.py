@@ -293,7 +293,7 @@ def open_pc(pc_closed_y, pc_closed_z):
 
     pc_lid_thickness = 0.007
     current_pose = arm.get_current_pose()
-    current_pose.position.z = pc_closed_z - pc_lid_thickness
+    current_pose.position.z = pc_closed_z - pc_lid_thickness - 0.004
     arm.move_to_cartesian(current_pose)
 
     current_pose = arm.get_current_pose()
@@ -311,8 +311,8 @@ def open_pc(pc_closed_y, pc_closed_z):
     arm.relative_move(2, 0.1)
 
     current_pose = arm.get_current_pose()
-    rotation_lst = [arm.rotate(np.pi/2,0,0, False),arm.rotate(np.pi,np.pi/2,0, False), arm.rotate(np.pi,np.pi,0, False)]
-    arm.move_to_cartesian(rotation_lst)
+    rotation_list = [arm.rotate(np.pi/2,0,0, False),arm.rotate(np.pi,np.pi/2,0, False), arm.rotate(np.pi,np.pi,0, False)]
+    arm.move_to_cartesian(rotation_list)
 
     arm.relative_move(1, -0.02)
     arm.relative_move(2, -0.11)
@@ -326,10 +326,9 @@ def open_pc(pc_closed_y, pc_closed_z):
     
     return arm.get_current_pose()
 
-
 def close_pc(pc_open_pose):
     target_pose = deepcopy(pc_open_pose)
-    target_pose.position.y += 0.06
+    target_pose.position.y += 0.08
     target_pose.position.z -= 0.025
     arm.move_to_cartesian(target_pose)
 

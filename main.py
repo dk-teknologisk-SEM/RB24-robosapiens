@@ -599,6 +599,23 @@ def unscrew_screws_from_pc():
     arm.move_to_neutral()
     set_force_contact_threshold(old_threshold)
 
+
+def generate_spiral(center_pose=None, radius_step=0.1, angle_step=0.1, num_points=10):
+    points = []
+    angle = 0
+    radius = 0
+    if center_pose is None:
+        center_pose = arm.get_current_pose()
+    
+    for _ in range(num_points):
+        x = center_pose.position.x + radius * cos(angle)
+        y = center_pose.position.y + radius * sin(angle)
+        points.append(Pose(position=Point(x=x, y=y, z=center_pose.position.z), orientation=center_pose.orientation))
+        radius += radius_step
+        angle += angle_step
+    return points[1:]
+
+
 def rescrew_screw(just_above_screw_pose, screw_time=2):
     arm.move_to_joint(just_above_screw_pose)
     arm.relative_move(2, -0.015)

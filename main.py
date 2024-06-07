@@ -1,15 +1,27 @@
-from panda_ros_lib import PandaArm, rprint
-import numpy as np
-from copy import deepcopy
-from geometry_msgs.msg import Pose, Point
-from time import sleep
-from math import dist, sin, cos
-import rospy
-
 import sys
+from copy import deepcopy
+from math import cos, dist, sin
+from time import sleep
+
+import numpy as np
+import rospy
+from geometry_msgs.msg import Point, Pose, Quaternion
+from panda_ros_lib import PandaArm, rprint
 
 sys.path.append("/home/franka/robosapiens/RB24-robosapiens")
 from poseDict import pose_dict
+
+# position:
+#     x: 0.38034927530988794
+#     y: -0.3282111268132951
+#     z: 0.03519540893130724
+# orientation:
+#     x: 0.9999806260596
+#     y: -0.002497528511030583
+#     z: 0.004649514434723419
+#     w: 0.0033002836708662677
+pc_feature = Pose(position=Point(x=0.38034927530988794, y=-0.3282111268132951, z=0.03519540893130724),
+                              orientation=Quaternion(x=0.9999806260596, y=-0.002497528511030583, z=0.004649514434723419, w=0.0033002836708662677))
 
 arm = PandaArm()
 
@@ -829,6 +841,8 @@ def main():
     arm.move_to_neutral()
     arm.gripper.close()
     arm.set_speed(0.25)
+    
+    arm.set_current_feature_zeropoint(pc_feature)
 
     while True:
         arm.align_to_base(z=True)

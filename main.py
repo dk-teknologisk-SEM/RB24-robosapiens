@@ -1,427 +1,17 @@
-from panda_ros_lib import PandaArm, IterativeParabolicTimeParameterization, rprint
+from panda_ros_lib import PandaArm, rprint
 import numpy as np
 from copy import deepcopy
-from geometry_msgs.msg import Pose, Point, Quaternion
+from geometry_msgs.msg import Pose, Point
 from time import sleep
 from math import dist, sin, cos
 import rospy
 
-arm = PandaArm()
+import sys
 
-pose_dict = {
-    # pc open tool:
-    # position:
-    #     x: 0.05733242432911795
-    #     y: 0.6689132445003902
-    #     z: 0.05685740570286763
-    # orientation:
-    #     x: 0.999749275808511
-    #     y: -0.007967242863267691
-    #     z: 0.007470049325425549
-    #     w: -0.019547555463311283
-    "pc_open_tool": Pose(
-        position=Point(
-            x=0.05733242432911795, y=0.6689132445003902, z=0.05685740570286763 + 0.004
-        ),
-        orientation=Quaternion(
-            x=0.999749275808511,
-            y=-0.007967242863267691,
-            z=0.007470049325425549,
-            w=-0.019547555463311283,
-        ),
-    ),
-    # screen_frame_remover_tool:
-    # position:
-    #     x: 0.11921723907546183
-    #     y: 0.6682887607731034
-    #     z: 0.05198510034165075
-    # orientation:
-    #     x: 0.9997503370695412
-    #     y: -0.004974166528565403
-    #     z: 0.0032409638284769306
-    #     w: -0.021541061954963574
-    "screen_frame_remover_tool": Pose(
-        position=Point(
-            x=0.11921723907546183, y=0.6682887607731034, z=0.05198510034165075
-        ),
-        orientation=Quaternion(
-            x=0.9997503370695412,
-            y=-0.004974166528565403,
-            z=0.0032409638284769306,
-            w=-0.021541061954963574,
-        ),
-    ),
-    # reattach_screen_frame_tool:
-    # position:
-    #     x: 0.16915693824357508
-    #     y: 0.6683187553468177
-    #     z: 0.062001380081872885
-    # orientation:
-    #     x: 0.9996913313731218
-    #     y: -0.014610600147982525
-    #     z: 0.00577630464276479
-    #     w: -0.019245951403475937
-    "reattach_screen_frame_tool": Pose(
-        position=Point(
-            x=0.16915693824357508, y=0.6683187553468177, z=0.061001380081872885
-        ),
-        orientation=Quaternion(
-            x=0.9996913313731218,
-            y=-0.014610600147982525,
-            z=0.00577630464276479,
-            w=-0.019245951403475937,
-        ),
-    ),
-    # approx_over_pc:
-    # position:
-    #     x: 0.22201995933787994
-    #     y: 0.12839919454023427
-    #     z: 0.0430857855019747
-    # orientation:
-    #     x: 0.710601819071197
-    #     y: -0.7035943573742
-    #     z: 4.96265348249554e-07
-    #     w: -0.00018709261380103005
-    "approx_over_pc": Pose(
-        position=Point(
-            x=0.22201995933787994, y=0.12839919454023427, z=0.0430857855019747
-        ),
-        orientation=Quaternion(
-            x=0.710601819071197,
-            y=-0.7035943573742,
-            z=4.96265348249554e-07,
-            w=-0.00018709261380103005,
-        ),
-    ),
-    # approx_over_screen:
-    # position:
-    #     x: 0.2007785586355047
-    #     y: 0.3786916359605762
-    #     z: 0.038138931532571134
-    # orientation:
-    #     x: 0.7127143494800567
-    #     y: -0.7014080661131809
-    #     z: 0.004175902436892146
-    #     w: -0.006895119681679882
-    "approx_over_screen": Pose(
-        position=Point(
-            x=0.2007785586355047, y=0.3786916359605762, z=0.038138931532571134
-        ),
-        orientation=Quaternion(
-            x=0.7127143494800567,
-            y=-0.7014080661131809,
-            z=0.004175902436892146,
-            w=-0.006895119681679882,
-        ),
-    ),
-    # approx_over_screw_tool:
-    # joint values: 1.4247089063927794, 0.02294454488027514, -0.33347968736871003, -2.613312880213784, -1.9871708795112801, 1.7851599069568844, -2.7739401184486407
-    "approx_over_screw_tool": [
-        1.4311203370395733,
-        0.01589967568759577,
-        -0.3352690462254318,
-        -2.6189887238850136,
-        -1.9814788819419014,
-        1.7842299505207273,
-        -2.7759469578915112,
-    ],
-    # above_screen_frame_reattach_startpoint:
-    # position:
-    #     x: 0.37860320562584904
-    #     y: 0.25827006719757184
-    #     z: 0.049199265237291526
-    # orientation:
-    #     x: -0.6984942505941352
-    #     y: 0.7156153248200037
-    #     z: -0.0004737473805072651
-    #     w: 0.0005141333660185798
-    "above_screen_frame_reattach_startpoint": Pose(
-        position=Point(
-            x=0.37360320562584904, y=0.25827006719757184, z=0.049199265237291526
-        ),
-        orientation=Quaternion(
-            x=-0.6984942505941352,
-            y=0.7156153248200037,
-            z=-0.0004737473805072651,
-            w=0.0005141333660185798,
-        ),
-    ),
-    "approx_above_screen_with_screw_tool": [
-        1.8009205215855648,
-        -0.9884424066794545,
-        -1.8641107601701168,
-        -2.083275166394418,
-        0.7750173774303746,
-        2.066743081026607,
-        -1.4132072120328094,
-    ],
-    "just_above_screw1": [
-        2.0473151920350166,
-        -1.3172633878888524,
-        -2.119343980808924,
-        -1.5976601368470218,
-        0.9184731412051637,
-        2.363234942918682,
-        -1.6017888109417486,
-    ],
-    "just_above_screw2": [
-        1.7328304659692864,
-        -1.0553802775332801,
-        -2.2613807127861594,
-        -1.9985897680379265,
-        0.34595452260729637,
-        1.6146659816899598,
-        -1.5802690885332846,
-    ],
-    "just_above_screw3": [
-        2.128083195463207,
-        -1.086070538554275,
-        -2.183045222198754,
-        -2.045789285905178,
-        0.4165805819564395,
-        1.776043543711331,
-        -1.5324558357381157,
-    ],
-    # if not new fixture with corners "just_above_screw3": [1.9068539003740277, -1.0985445564504255, -2.0992789021548406, -2.314217004943312, 0.5971005605599946, 2.1517024513218135, -1.651512649972728],
-    "just_above_screw4": [
-        2.496900336533262,
-        -1.302216902849967,
-        -2.249884076130255,
-        -1.3326268258204164,
-        0.8131843160523317,
-        2.071208368553055,
-        -1.4167155728340637,
-    ],
-    # if not new fixture with corners "just_above_screw4": [2.4193914513609065, -1.320201842140733, -2.1651112390362925, -1.4635632465885928, 0.8576647046496799, 2.2705184519496253, -1.499695961078008],
-    # screw hole1
-    # position:
-    #     x: 0.17438816272508167
-    #     y: 0.6883851077571157
-    #     z: 0.03662979719443973
-    # orientation:
-    #     x: 0.6890184902575103
-    #     y: 0.7247167265578114
-    #     z: -0.005941444957152131
-    #     w: 0.001971182998326503
-    "screw_hole1": Pose(
-        position=Point(
-            x=0.17438816272508167, y=0.6883851077571157, z=0.03662979719443973
-        ),
-        orientation=Quaternion(
-            x=0.6890184902575103,
-            y=0.7247167265578114,
-            z=-0.005941444957152131,
-            w=0.001971182998326503,
-        ),
-    ),
-    # screw hole2
-    # position:
-    #     x: 0.17482815627966847
-    #     y: 0.673359298063665
-    #     z: 0.035172471576562066
-    # orientation:
-    #     x: 0.6890236397156073
-    #     y: 0.7247052081531279
-    #     z: -0.006777953019886442
-    #     w: 0.0016865769028615435
-    "screw_hole2": Pose(
-        position=Point(
-            x=0.17482815627966847, y=0.673359298063665, z=0.035172471576562066
-        ),
-        orientation=Quaternion(
-            x=0.6890236397156073,
-            y=0.7247052081531279,
-            z=-0.006777953019886442,
-            w=0.0016865769028615435,
-        ),
-    ),
-    # screw hole3
-    # position:
-    #     x: 0.1664217456230898
-    #     y: 0.6582952010929098
-    #     z: 0.036670562939416854
-    # orientation:
-    #     x: 0.6892174154108944
-    #     y: 0.7244904235665832
-    #     z: -0.009584289267318132
-    #     w: 0.0010591760382997403
-    "screw_hole3": Pose(
-        position=Point(
-            x=0.1664217456230898, y=0.6582952010929098, z=0.036670562939416854
-        ),
-        orientation=Quaternion(
-            x=0.6892174154108944,
-            y=0.7244904235665832,
-            z=-0.009584289267318132,
-            w=0.0010591760382997403,
-        ),
-    ),
-    # screw hole4
-    # position:
-    #     x: 0.17532651654498604
-    #     y: 0.6433158715508616
-    #     z: 0.034407648468695075
-    # orientation:
-    #     x: 0.6896277063275514
-    #     y: 0.7241284265106904
-    #     z: -0.006982747151829334
-    #     w: 0.0016999490480331667
-    "screw_hole4": Pose(
-        position=Point(
-            x=0.17532651654498604, y=0.6433158715508616, z=0.034407648468695075
-        ),
-        orientation=Quaternion(
-            x=0.6896277063275514,
-            y=0.7241284265106904,
-            z=-0.006982747151829334,
-            w=0.0016999490480331667,
-        ),
-    ),
-    # pc open pose
-    # position:
-    #     x: 0.22488338974878735
-    #     y: 0.5337942703884697
-    #     z: 0.012429523185995345
-    # orientation:
-    #     x: 0.7115514192389913
-    #     y: -0.7026241814753624
-    #     z: 0.0017259332275041644
-    #     w: -0.0032952298172670823
-    "pc_open_pose": Pose(
-        position=Point(
-            x=0.22488338974878735, y=0.5337942703884697, z=0.012429523185995345
-        ),
-        orientation=Quaternion(
-            x=0.7115514192389913,
-            y=-0.7026241814753624,
-            z=0.0017259332275041644,
-            w=-0.0032952298172670823,
-        ),
-    ),
-    # screen remover tool
-    # position:
-    #     x: -0.09752514464401774
-    #     y: 0.6699170123947952
-    #     z: 0.052242802087636785
-    # orientation:
-    #     x: 0.9998842004260421
-    #     y: 0.011519073565381807
-    #     z: -0.0011068183837063593
-    #     w: -0.00988289611579314
-    "screen_remover_tool": Pose(
-        position=Point(
-            x=-0.09752514464401774, y=0.6699170123947952, z=0.052242802087636785
-        ),
-        orientation=Quaternion(
-            x=0.9998842004260421,
-            y=0.011519073565381807,
-            z=-0.0011068183837063593,
-            w=-0.00988289611579314,
-        ),
-    ),
-    # screen_remover_starting_point
-    # position:
-    #     x: 0.10307521912937706
-    #     y: 0.37181146502201834
-    #     z: 0.4777009669742028
-    # orientation:
-    #     x: 0.9998724064556803
-    #     y: 0.011885856262552853
-    #     z: -0.00046915861588556424
-    #     w: -0.01066194727177901
-    "screen_remover_starting_point": Pose(
-        position=Point(
-            x=0.10307521912937706, y=0.37181146502201834, z=0.4777009669742028
-        ),
-        orientation=Quaternion(
-            x=0.9998724064556803,
-            y=0.011885856262552853,
-            z=-0.00046915861588556424,
-            w=-0.01066194727177901,
-        ),
-    ),
-    "screen_remover_init_pose": [
-        1.2586937529445135,
-        1.141014569198876,
-        -1.5285425722009187,
-        -1.963085132983693,
-        1.1754174835417006,
-        1.8310459912037844,
-        1.7666723326858293,
-    ],
-    "screen_frame_holder_pose": [
-        -0.3372660331767902,
-        0.908194028473517,
-        0.7066221270561218,
-        -1.2979891606535983,
-        1.1430772891574437,
-        1.9559269683123433,
-        -1.2271082312517112,
-    ],
-    # replace screen frame pose
-    # position:
-    #     x: 0.20760234949738338
-    #     y: 0.2666872894619938
-    #     z: 0.021453934618378794
-    # orientation:
-    #     x: 0.00890364091094405
-    #     y: 0.9998229758075018
-    #     z: -0.016138900135312096
-    #     w: 0.0037786410762532174
-    "replace_screen_frame_pose": Pose(
-        position=Point(
-            x=0.20760234949738338, y=0.2666872894619938, z=0.021453934618378794
-        ),
-        orientation=Quaternion(
-            x=0.00890364091094405,
-            y=0.9998229758075018,
-            z=-0.016138900135312096,
-            w=0.0037786410762532174,
-        ),
-    ),
-    # setpoint replace screen frame
-    # position:
-    #     x: 0.20539675969660026
-    #     y: 0.16133011533858677
-    #     z: 0.10627113002249214
-    # orientation:
-    #     x: 0.010050573066068973
-    #     y: 0.9998044633837311
-    #     z: -0.016748926566094887
-    #     w: 0.0030813045771607393
-    "setpoint_replace_screen_frame": Pose(
-        position=Point(
-            x=0.20539675969660026, y=0.16133011533858677, z=0.10627113002249214
-        ),
-        orientation=Quaternion(
-            x=0.010050573066068973,
-            y=0.9998044633837311,
-            z=-0.016748926566094887,
-            w=0.0030813045771607393,
-        ),
-    ),
-    # pickup screen frame from holder
-    # position:
-    #     x: 0.3505188466055554
-    #     y: 0.7079726656182903
-    #     z: 0.2872879247477031
-    # orientation:
-    #     x: -0.6955171374323214
-    #     y: 0.007073613147483974
-    #     z: 0.014305651282145912
-    #     w: 0.7183322517306203
-    "pickup_screen_frame_from_holder": Pose(
-        position=Point(
-            x=0.3505188466055554, y=0.7079726656182903, z=0.2872879247477031
-        ),
-        orientation=Quaternion(
-            x=-0.6955171374323214,
-            y=0.007073613147483974,
-            z=0.014305651282145912,
-            w=0.7183322517306203,
-        ),
-    ),
-}
+sys.path.append("/home/franka/robosapiens/RB24-robosapiens")
+from poseDict import pose_dict
+
+arm = PandaArm()
 
 tool_weights = {
     "panda_tool_pc_open": 0.014,
@@ -678,12 +268,55 @@ def remove_screen():
     arm.move_to_cartesian(pose_dict["screen_remover_starting_point"])
     arm.move_to_joint(pose_dict["screen_remover_init_pose"])
     arm.move_to_cartesian(pose_dict["approx_over_screen"])
-    arm.rotate(deg_to_rad(2.2), 0, 0)
+
+    # arm.rotate(deg_to_rad(2.2), 0, 0)
     # old_threshold = arm.lower_force
     # set_force_contact_threshold([20, 20, 20, 23, 23, 23])
-    arm.move_to_contact(force_threshold=20)
-    sleep(1)
-    arm.relative_move(2, 0.05)
+    # change_tool("panda_tool_screen_remover_tcp", tool_weights["panda_tool_screen_remover"], False)
+    #     >>> new_point
+    # position:
+    #   x: 0.1962346100499613
+    #   y: 0.3886971473541386
+    #   z: 0.028200751360666562
+    # orientation:
+    #   x: 0.7186949881596384
+    #   y: -0.6952116051344355
+    #   z: 0.0028659301761201723
+    #   w: -0.012252531364765304
+
+    # position:
+    #   x: 0.20124054486679316
+    #   y: 0.37554755914807153
+    #   z: 0.012944272977254971
+    # orientation:
+    #   x: 0.9997805415424108
+    #   y: 0.011644497884173108
+    #   z: 0.013699272010357732
+    #   w: -0.010751947199278172
+
+    arm.gripper.move_joints(0.021)
+    arm.move_to_cartesian(new_point)
+    arm.move_to_contact(force_threshold=5)
+    arm.gripper.move_joints(0.024)
+    # down middle
+    arm.relative_move(2, 0.01)
+    # down to the right
+    arm.relative_move(0, 0.01)
+    arm.move_to_contact(force_threshold=5)
+    arm.relative_move(2, 0.01)
+    # down to the left
+    arm.relative_move(0, -0.03)
+    arm.move_to_contact(force_threshold=5)
+    arm.relative_move(2, 0.01)
+    # back to middle
+    arm.relative_move(0, 0.015)
+    arm.relative_move(2, -0.005)
+    # Grasp again
+    arm.gripper.move_joints(0.021)
+    arm.relative_move(2, 0.02)
+    # arm.gripper.grasp(0.02, force=40)
+    # arm.align_to_base()
+    rprint("done")
     #
     set_robot_load(
         tool_weights["panda_tool_screen_remover"] + tool_weights["pc_screen"]
@@ -764,24 +397,33 @@ def replace_screen():
     set_robot_load(tool_weights["panda_tool_screen_remover"])
 
 
-def grasp_tool(tool_pose, end_effector_link, tool_weight):
+def grasp_tool(tool_pose, end_effector_link, tool_weight, is_screw_driver=False):
+    arm.move_to_joint(pose_dict["above_all_tools"])
+    arm.gripper.move_joints(0.04)
     tool_pose_above = deepcopy(tool_pose)
-    tool_pose_above.position.z += 0.1
+    tool_pose_above.position.z += 0.03
     arm.move_to_joint(tool_pose_above)
-    arm.gripper.open()
 
     arm.move_to_cartesian(tool_pose)
-    arm.gripper.grasp(0.02, 40)
+    if is_screw_driver:
+        arm.gripper.move_joints(width=0.016)
+    else:
+        arm.gripper.grasp(0.02, 40)
     arm.relative_move(2, 0.1)
 
-    change_tool(end_effector_link, tool_weight)
+    change_tool(end_effector_link, tool_weight, is_screw_driver)
 
 
-def change_tool(end_effector_link, tool_weight):
+def change_tool(end_effector_link, tool_weight, is_screw_driver=False):
     arm.stop_controller(arm.controller_name)
 
     arm.move_group.set_end_effector_link(end_effector_link)
-    arm.set_EE_frame([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+    if is_screw_driver:
+        # fmt: off
+        arm.set_EE_frame([0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,0.0,-0.088,1.0]) 
+        # fmt: on
+    else:
+        arm.set_EE_frame([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
     arm.set_load(
         tool_weight + tool_weights["realsense_camera"],
         [0, 0, 0],
@@ -801,78 +443,19 @@ def set_robot_load(tool_weight):
 
 
 def place_tool(tool_pose):
-    rprint("place_tool")
+    arm.move_to_joint(pose_dict["above_all_tools"])
     tool_pose_above = deepcopy(tool_pose)
-    tool_pose_above.position.z += 0.1
-    rprint("move_to_joint")
+    tool_pose_above.position.z += 0.03
     arm.move_to_joint(tool_pose_above)
-    rprint("move_to_joint done")
     arm.move_group.set_end_effector_link("panda_hand_tcp")
     #
     arm.move_to_cartesian(tool_pose)
-    arm.gripper.open()
-    arm.relative_move(2, 0.1)
+    arm.gripper.move_joints(0.04)
+    arm.move_to_cartesian(tool_pose_above)
     #
     change_tool("panda_hand_tcp", 0.0)
 
-
-def grasp_screw_tool(tool_pose, screw_direction):
-    arm.move_to_neutral()
-    offset_z = -0.2 if screw_direction else -0.175
-    arm.move_to_joint(tool_pose)
-    arm.gripper.open()
-    arm.relative_move(2, offset_z)
-    # arm.gripper.move_joints(0.019)
-    arm.gripper.move_joints(0.016)
-    arm.relative_move(2, 0.1)
-
-    arm.stop_controller(arm.controller_name)
-
-    arm.move_group.set_end_effector_link("panda_tool_unscrew_tcp")
-    arm.set_EE_frame(
-        [
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            -1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -0.088,
-            1.0,
-        ]
-    )
-    arm.set_load(
-        tool_weights["panda_tool_screwdriver"] + tool_weights["realsense_camera"],
-        [0, 0, 0],
-        load_inertia=[0.001, 0, 0, 0, 0.001, 0, 0, 0, 0.001],
-    )
-
-    arm.start_controller(arm.controller_name)
-    arm.clear_error()
-
-
-def place_screw_tool(tool_pose, screw_direction):
-    arm.move_to_neutral()
-    offset_z = -0.2 if screw_direction else -0.175
-    arm.move_to_joint(pose_feature=tool_pose)
-    arm.gripper.grasp(0.015, 20)
-    arm.gripper.move_joints(0.016)
-    arm.move_group.set_end_effector_link("panda_hand_tcp")
-    arm.relative_move(2, offset_z)
-    arm.gripper.open()
-    arm.clear_error()
-    arm.relative_move(2, 0.15)
-    arm.move_to_neutral()
-
-    change_tool("panda_hand_tcp", 0.0)
+    arm.move_to_joint(pose_dict["above_all_tools"])
 
 
 def set_force_contact_threshold(force_contact_threshold):
@@ -927,37 +510,6 @@ def unscrew_screw(
         arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
     else:
         unscrew_screw(just_above_screw_pose, unscrew_time=unscrew_time)
-
-
-# def unscrew_screw(just_above_screw_pose, unscrew_time=2):
-#     p1 = deepcopy(just_above_screw_pose)
-#     p1.position.z += 0.003
-#     arm.move_to_cartesian(p1)
-#     arm.gripper.grasp(0.015, 20)
-#     arm.move_to_cartesian(just_above_screw_pose)
-#     arm.move_to_contact(speed=0.005)
-#     rprint(msg="move_to_contact done")
-#     # spiral_points = generate_spiral(center_pose=arm.get_current_pose(), radius_step=0.00002, angle_step=0.1, num_points=100)
-#     # arm.move_to_cartesian(pose_feature=spiral_points, speed=0.005)
-#     # arm.relative_move(2,0.0005)
-#     spiral_search()
-#     # arm.move_to_contact(speed=0.005)
-#     # arm.rotate(deg_to_rad(2.8),0,0)
-#     rprint(arm.robot_mode)
-#     # arm.gripper.grasp(0.015, 20)
-#     sleep(1.7)
-#     rprint("sleep done")
-#     # arm.relative_move(2, 0.0035, speed=0.003)
-#     # arm.align_to_base()
-#     # arm.relative_move(2, 0.02)
-#     # rprint("relative_move done")
-#     p = arm.get_current_pose()
-#     p.position.z += 0.02
-#     p.position.y -= 0.003
-#     # arm.relative_move(2, 0.02)
-#     arm.move_to_cartesian(p)
-#     arm.gripper.move_joints(0.016)
-#     arm.move_to_joint(pose_dict["approx_above_screen_with_screw_tool"])
 
 
 def spiral_search(
@@ -1208,7 +760,7 @@ def contact_with_screen_frame():
     current_pose = arm.get_current_pose()
     current_pose.position.y -= 0.1
     current_pose.position.z -= 0.005
-    arm.move_to_contact(current_pose, only_in_axis=0, force_threshold=8)
+    arm.move_to_contact(current_pose, only_in_axis=0, force_threshold=15)
     screen_frame = arm.get_current_pose()
     # set_force_contact_threshold(old_threshold)
 
@@ -1243,6 +795,7 @@ def place_screen_frame_in_holder():
 
 def pickup_screen_frame_from_holder():
     arm.move_to_joint(pose_dict["screen_frame_holder_pose"])
+    arm.gripper.open()
     arm.move_to_cartesian(pose_dict["pickup_screen_frame_from_holder"])
     arm.gripper.grasp(0.035, 20)
     arm.relative_move(2, 0.02)
@@ -1260,10 +813,9 @@ def replace_screen_frame(goal_pose_offset=0.003):
         arm.rotate(0, 0, np.pi / 2, False),
     ]
     arm.move_to_cartesian(rotation_list)
-
-    arm.move_to_cartesian(pose_dict["setpoint_replace_screen_frame"])
+    arm.move_to_cartesian(pose_dict["replace_screen_frame_pose_part1"])
     arm.relative_move(2, -0.015)
-    goal_pose = deepcopy(pose_dict["replace_screen_frame_pose"])
+    goal_pose = deepcopy(pose_dict["replace_screen_frame_pose_part2"])
     goal_pose.position.y += goal_pose_offset
     arm.move_to_cartesian(goal_pose)
     arm.gripper.open()
@@ -1311,10 +863,15 @@ def main():
 
         ### UNSCREW SCREWS
         ## Set this from the terminal or make rosnode   NE_T_EE: [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.088, 1.0]
-        grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=0)
+        grasp_tool(
+            pose_dict["unscrew_tool"],
+            "panda_tool_unscrew_tcp",
+            tool_weights["panda_tool_screwdriver"],
+            is_screw_driver=True,
+        )
         # arm.move_to_neutral()
         unscrew_screws_from_pc()
-        place_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=0)
+        place_tool(pose_dict["unscrew_tool"])
 
         ### REMOVE SCREEN
         grasp_tool(
@@ -1332,13 +889,18 @@ def main():
         arm.move_to_neutral()
 
         ### RESCREW SCREWS
-        grasp_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=1)
-        arm.move_group.set_end_effector_link("panda_tool_screw_tcp")
+        grasp_tool(
+            pose_dict["screw_tool"],
+            "panda_tool_screw_tcp",
+            tool_weights["panda_tool_screwdriver"],
+            is_screw_driver=True,
+        )
         # arm.move_to_neutral()
         rescrew_screws_to_pc()
-        place_screw_tool(pose_dict["approx_over_screw_tool"], screw_direction=1)
+        place_tool(pose_dict["screw_tool"])
 
         ### REPLACE SCREEN FRAME
+        arm.move_to_neutral()
         pickup_screen_frame_from_holder()
         replace_screen_frame()
         # arm.move_to_neutral()
@@ -1351,7 +913,7 @@ def main():
         )
         arm.move_to_joint(pose_dict["above_screen_frame_reattach_startpoint"])
         reattach_screen_frame_NEW(force_z=8)
-        arm.move_to_neutral()
+        # arm.move_to_neutral()
         place_tool(pose_dict["pc_open_tool"])
 
         ### CLOSE PC
